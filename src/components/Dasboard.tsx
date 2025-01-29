@@ -6,10 +6,11 @@ import EnhancedMetrics from "./EnhancedMetrics";
 import NetworkStats from "./NetworkStats";
 import BlockchainInfo from "./BlockchainInfo";
 import { ErrorBoundary } from "./ErrorBoundary";
+import AIInsights from "./AIInsights";
 
 export default function Dashboard() {
   return (
-    <div className="p-6 space-y-6">
+    <div className="md:p-6 md:space-y-6">
       <header className="text-center">
         <h1 className="text-4xl font-extrabold tracking-tight text-teal-400">
           PulseSOL Dashboard
@@ -20,6 +21,9 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 gap-6">
+        <ErrorBoundary>
+          <AIInsights />
+        </ErrorBoundary>
         <ErrorBoundary>
           <EnhancedMetrics />
         </ErrorBoundary>

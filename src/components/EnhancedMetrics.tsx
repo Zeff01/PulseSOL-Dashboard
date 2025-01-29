@@ -1,57 +1,14 @@
 "use client";
-
-import { useEffect, useState } from "react";
-
-interface SolanaData {
-  tps: number;
-  slot: number;
-  blockTime: number | null;
-  blockHeight: number;
-  health: string;
-  version: {
-    "feature-set": number | undefined;
-    "solana-core": string | undefined;
-  };
-  epochInfo: {
-    epoch: number;
-    slotIndex: number;
-    slotsInEpoch: number;
-    absoluteSlot: number;
-    blockHeight: number | undefined;
-  };
-}
+import { useSolanaData } from "@/hooks/useSolanaData";
 
 export default function EnhancedMetrics() {
-  const [data, setData] = useState<SolanaData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("/api/solana");
-        const result = await response.json();
-        if (result.error) throw new Error(result.error);
-        setData(result);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching metrics:", err);
-        setError("Failed to load metrics");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data, loading, error } = useSolanaData();
 
   if (loading) {
     return (
       <div className="bg-gray-800 p-6 rounded-lg animate-pulse">
         <div className="h-8 bg-gray-700 rounded w-1/4 mb-4"></div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="h-24 bg-gray-700 rounded"></div>
           ))}
@@ -73,7 +30,7 @@ export default function EnhancedMetrics() {
   return (
     <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-teal-400 mb-4">Network Metrics</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard
           title="TPS"
           value={data.tps.toFixed(2)}
@@ -103,8 +60,7 @@ export default function EnhancedMetrics() {
         />
       </div>
 
-      {/* Additional Network Information */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-gray-700 p-4 rounded-lg">
           <h3 className="text-lg font-semibold text-teal-300 mb-3">
             Version Info

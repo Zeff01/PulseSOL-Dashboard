@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useSolanaData } from "@/hooks/useSolanaData";
 
 type ValidatorData = {
   name: string;
@@ -9,40 +9,13 @@ type ValidatorData = {
 };
 
 export default function EcosystemHealth() {
-  const [networkHealth, setNetworkHealth] = useState({
-    avgConfirmationTime: 0,
-    currentTPS: 0,
-    blockTime: 0,
-  });
+  const { data: solanaData, loading, error } = useSolanaData();
 
-  const [validators] = useState<ValidatorData[]>([
+  const validators: ValidatorData[] = [
     { name: "Validator A", uptime: 99.9, stake: 1000000, status: "healthy" },
     { name: "Validator B", uptime: 98.5, stake: 800000, status: "healthy" },
     { name: "Validator C", uptime: 95.0, stake: 600000, status: "warning" },
-  ]);
-
-  useEffect(() => {
-    const fetchNetworkHealth = async () => {
-      try {
-        const response = await fetch("/api/solana");
-        const data = await response.json();
-
-        setNetworkHealth({
-          avgConfirmationTime: data.blockTime
-            ? Date.now() / 1000 - data.blockTime
-            : 0,
-          currentTPS: data.tps,
-          blockTime: data.blockTime,
-        });
-      } catch (error) {
-        console.error("Error fetching network health:", error);
-      }
-    };
-
-    fetchNetworkHealth();
-    const interval = setInterval(fetchNetworkHealth, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -57,6 +30,33 @@ export default function EcosystemHealth() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="bg-gray-800 p-6 rounded-lg animate-pulse">
+        <div className="h-8 bg-gray-700 rounded w-1/4 mb-4"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-700 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !solanaData) {
+    return (
+      <div className="bg-gray-800 p-6 rounded-lg">
+        <div className="text-red-400 p-4 bg-gray-700 rounded">
+          {error || "Failed to load data"}
+        </div>
+      </div>
+    );
+  }
+
+  const avgConfirmationTime = solanaData.blockTime
+    ? Date.now() / 1000 - solanaData.blockTime
+    : 0;
+
   return (
     <section className="bg-gray-800 p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-teal-400 mb-4">
@@ -67,18 +67,20 @@ export default function EcosystemHealth() {
         <div className="bg-gray-700 p-4 rounded-lg">
           <h3 className="text-lg text-gray-300">Avg. Confirmation Time</h3>
           <p className="text-2xl font-bold text-teal-400">
-            {networkHealth.avgConfirmationTime.toFixed(2)}s
+            {avgConfirmationTime.toFixed(2)}s
           </p>
         </div>
         <div className="bg-gray-700 p-4 rounded-lg">
           <h3 className="text-lg text-gray-300">Current TPS</h3>
           <p className="text-2xl font-bold text-teal-400">
-            {networkHealth.currentTPS.toFixed(2)}
+            {solanaData.tps.toFixed(2)}
           </p>
         </div>
         <div className="bg-gray-700 p-4 rounded-lg">
           <h3 className="text-lg text-gray-300">Network Status</h3>
-          <p className="text-2xl font-bold text-green-400">Operational</p>
+          <p className="text-2xl font-bold text-green-400">
+            {solanaData.health}
+          </p>
         </div>
       </div>
 

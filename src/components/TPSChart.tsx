@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { useSolanaData } from "@/hooks/useSolanaData";
 
 interface TPSData {
   timestamp: number;
@@ -16,39 +17,45 @@ interface TPSData {
 }
 
 export default function TPSChart() {
+  const { data: solanaData, loading, error } = useSolanaData();
   const [tpsHistory, setTPSHistory] = useState<TPSData[]>([]);
 
   useEffect(() => {
-    const fetchTPSData = async () => {
-      try {
-        const response = await fetch("/api/solana");
-        const result = await response.json();
+    if (solanaData?.tps) {
+      setTPSHistory((prev) => {
+        const newData = [
+          ...prev,
+          {
+            timestamp: Date.now(),
+            tps: solanaData.tps,
+          },
+        ];
 
-        setTPSHistory((prev) => {
-          const newData = [
-            ...prev,
-            {
-              timestamp: Date.now(),
-              tps: result.tps,
-            },
-          ];
-
-          return newData.slice(-20);
-        });
-      } catch (error) {
-        console.error("Error fetching TPS data:", error);
-      }
-    };
-
-    fetchTPSData();
-    const interval = setInterval(fetchTPSData, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
+        return newData.slice(-20);
+      });
+    }
+  }, [solanaData]);
 
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString();
   };
+
+  if (loading) {
+    return (
+      <div className="bg-gray-800 p-6 rounded-lg animate-pulse">
+        <div className="h-8 bg-gray-700 rounded w-1/4 mb-4"></div>
+        <div className="h-64 bg-gray-700 rounded"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gray-800 p-6 rounded-lg">
+        <div className="text-red-400 p-4 bg-gray-700 rounded">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <section className="bg-gray-800 p-6 rounded-lg shadow-md">

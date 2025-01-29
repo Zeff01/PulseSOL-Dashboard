@@ -1,71 +1,38 @@
 "use client";
-import * as tf from "@tensorflow/tfjs";
-import { useEffect, useState } from "react";
 
-tf.env().set("DEBUG", false);
-type Insight = {
-  title: string;
-  description: string;
-};
+import { useSolanaData } from "@/hooks/useSolanaData";
+import { useAIInsights } from "@/hooks/useAIInsights";
 
 export default function AIInsights() {
-  const [insights, setInsights] = useState<Insight[]>([]);
+  const {
+    data: solanaData,
+    loading: solanaLoading,
+    error: solanaError,
+  } = useSolanaData();
+  const {
+    insights,
+    loading: insightsLoading,
+    error: insightsError,
+  } = useAIInsights(solanaData?.tps || 0, solanaData?.blockTime || 0);
 
-  useEffect(() => {
-    const generateInsights = async () => {
-      try {
-        const response = await fetch("/api/solana");
-        const result = await response.json();
+  if (solanaLoading || insightsLoading) {
+    return (
+      <section className="bg-gray-800 p-6 rounded-lg shadow-md animate-pulse">
+        <h2 className="text-2xl font-bold text-teal-400 mb-4">AI Insights</h2>
+        <div className="h-6 bg-gray-700 rounded w-1/3 mb-2"></div>
+        <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+      </section>
+    );
+  }
 
-        const { tps, blockTime } = result;
-
-        const model = tf.sequential();
-        model.add(tf.layers.dense({ inputShape: [1], units: 1 }));
-        model.compile({ optimizer: "sgd", loss: "meanSquaredError" });
-
-        const xs = tf.tensor2d([1000, 1500, 2000, 2500], [4, 1]);
-        const ys = tf.tensor2d([1, 2, 3, 4], [4, 1]);
-
-        await model.fit(xs, ys, { epochs: 10 });
-
-        const prediction = model.predict(
-          tf.tensor2d([tps], [1, 1])
-        ) as tf.Tensor;
-        const predictedValue = prediction.dataSync()[0];
-
-        const generatedInsights: Insight[] = [
-          {
-            title: "Predicted TPS Trend",
-            description: `Based on the current activity, the TPS trend is predicted to be at level ${predictedValue.toFixed(
-              2
-            )}.`,
-          },
-        ];
-
-        if (tps > 2000) {
-          generatedInsights.push({
-            title: "High TPS Activity",
-            description: `The network is experiencing high activity with ${tps} transactions per second.`,
-          });
-        }
-
-        if (blockTime > 1) {
-          generatedInsights.push({
-            title: "Block Time Increase",
-            description: `Block confirmation time has risen to ${blockTime.toFixed(
-              2
-            )} seconds.`,
-          });
-        }
-
-        setInsights(generatedInsights);
-      } catch (error) {
-        console.error("Error generating AI insights:", error);
-      }
-    };
-
-    generateInsights();
-  }, []);
+  if (solanaError || insightsError) {
+    return (
+      <section className="bg-gray-800 p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-teal-400 mb-4">AI Insights</h2>
+        <p className="text-red-400">{solanaError || insightsError}</p>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-gray-800 p-6 rounded-lg shadow-md">
@@ -73,8 +40,7 @@ export default function AIInsights() {
       <ul className="list-disc pl-6 space-y-2">
         {insights.map((insight, index) => (
           <li key={index} className="text-gray-300">
-            <strong className="text-teal-400">{insight.title}: </strong>
-            {insight.description}
+            {insight}
           </li>
         ))}
       </ul>

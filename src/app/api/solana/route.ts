@@ -1,25 +1,14 @@
 import { NextResponse } from "next/server";
-import { Connection, Version, EpochInfo } from "@solana/web3.js";
-
-interface SolanaData {
-  slot: number;
-  blockTime: number | null;
-  version: Version;
-  tps: number;
-  epochInfo: EpochInfo;
-  blockHeight: number;
-  health: "Healthy" | "Moderate" | "Degraded";
-}
-
-interface ErrorResponse {
-  error: string;
-}
+import { Connection } from "@solana/web3.js";
+import type { SolanaData, APIErrorResponse } from "@/types/solana";
 
 let cachedData: SolanaData | null = null;
 let lastFetchTime = 0;
 const CACHE_DURATION = 30000;
 
-export async function GET(): Promise<NextResponse<SolanaData | ErrorResponse>> {
+export async function GET(): Promise<
+  NextResponse<SolanaData | APIErrorResponse>
+> {
   try {
     const now = Date.now();
 
@@ -39,7 +28,7 @@ export async function GET(): Promise<NextResponse<SolanaData | ErrorResponse>> {
     // Initialize connection
     const connection = new Connection(rpcEndpoint);
 
-    // Fetch data
+    // Fetch basic blockchain data
     const [slot, version, performanceSamples, epochInfo, blockHeight] =
       await Promise.all([
         connection.getSlot(),
@@ -60,7 +49,7 @@ export async function GET(): Promise<NextResponse<SolanaData | ErrorResponse>> {
     // Check health based on performance
     const health = tps > 1000 ? "Healthy" : tps > 500 ? "Moderate" : "Degraded";
 
-    // Create response data with type safety
+    // Create response data
     cachedData = {
       slot,
       blockTime,
@@ -69,12 +58,9 @@ export async function GET(): Promise<NextResponse<SolanaData | ErrorResponse>> {
       epochInfo,
       blockHeight,
       health,
-    } as SolanaData;
+    };
 
     lastFetchTime = now;
-
-    console.log("Solana API Response:", cachedData);
-
     return NextResponse.json(cachedData);
   } catch (error) {
     console.error("Solana API Error:", error);

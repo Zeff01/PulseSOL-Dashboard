@@ -1,44 +1,8 @@
 "use client";
-"use client";
-import { useEffect, useState } from "react";
-
-interface NetworkData {
-  slot: number;
-  blockTime: number;
-  tps: number;
-  health: string;
-  epochInfo: {
-    epoch: number;
-    slotIndex: number;
-    slotsInEpoch: number;
-  };
-}
+import { useSolanaData } from "@/hooks/useSolanaData";
 
 export default function NetworkStats() {
-  const [data, setData] = useState<NetworkData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("/api/solana");
-        const result = await response.json();
-        if (result.error) throw new Error(result.error);
-        setData(result);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching network stats:", err);
-        setError("Failed to load network statistics");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data, loading, error } = useSolanaData();
 
   if (loading) {
     return (
@@ -80,7 +44,6 @@ export default function NetworkStats() {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Performance Metrics */}
         <div className="bg-gray-700 p-4 rounded-lg">
           <h3 className="text-lg font-semibold text-teal-300 mb-3">
             Performance
@@ -101,13 +64,14 @@ export default function NetworkStats() {
             <div className="flex justify-between">
               <span className="text-gray-400">Last Block Time</span>
               <span className="text-white font-medium">
-                {new Date(data.blockTime * 1000).toLocaleTimeString()}
+                {data.blockTime
+                  ? new Date(data.blockTime * 1000).toLocaleTimeString()
+                  : "N/A"}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Epoch Information */}
         <div className="bg-gray-700 p-4 rounded-lg">
           <h3 className="text-lg font-semibold text-teal-300 mb-3">
             Epoch Progress

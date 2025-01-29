@@ -1,179 +1,132 @@
 "use client";
-import { useEffect, useState } from "react";
-
-interface NetworkActivity {
-  slot: number;
-  blockTime: number;
-  tps: number;
-  blockHeight: number;
-  epochInfo: {
-    epoch: number;
-    slotIndex: number;
-    slotsInEpoch: number;
-    absoluteSlot: number;
-    blockHeight: number;
-  };
-  health: string;
-  version: {
-    "feature-set": number;
-    "solana-core": string;
-  };
-}
+import { useSolanaData } from "@/hooks/useSolanaData";
+import { useNFTData } from "@/hooks/useNFTData";
 
 export default function TrendingProjects() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<NetworkActivity | null>(null);
+  const {
+    data: solanaData,
+    loading: solanaLoading,
+    error: solanaError,
+  } = useSolanaData();
+  const { data: nftData, loading: nftLoading, error: nftError } = useNFTData();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/solana");
-        const result = await response.json();
-        setData(result);
-
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load network data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (loading) {
+  if (solanaLoading || nftLoading) {
     return (
-      <section className="bg-gray-800 p-6 rounded-lg shadow-md">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-700 rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-700 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="bg-gray-800 p-6 rounded-lg shadow-md">
-        <div className="text-red-400 p-4 bg-gray-700 rounded">{error}</div>
-      </section>
-    );
-  }
-
-  if (!data) return null;
-
-  return (
-    <section className="bg-gray-800 p-6 rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-teal-400">
-          Network Activity Dashboard
-        </h2>
-        <div className="flex items-center space-x-2">
-          <span
-            className={`h-2 w-2 rounded-full ${
-              data.health === "Healthy" ? "bg-green-400" : "bg-yellow-400"
-            }`}
-          ></span>
-          <span className="text-sm text-gray-400">{data.health}</span>
+      <div className="bg-gray-800 p-6 rounded-lg animate-pulse">
+        <div className="h-8 bg-gray-700 rounded w-1/4 mb-4"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-700 rounded"></div>
+          ))}
         </div>
       </div>
+    );
+  }
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {/* TPS Card */}
-        <div className="bg-gray-700 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-teal-300 mb-2">
-            Transaction Speed
-          </h3>
-          <div className="flex justify-between items-baseline">
-            <span className="text-2xl font-bold text-white">
-              {data.tps.toFixed(2)}
-            </span>
-            <span className="text-sm text-gray-400">TPS</span>
-          </div>
-          <div className="text-sm text-gray-400 mt-2">
-            Transactions per second
-          </div>
+  if (solanaError || nftError) {
+    return (
+      <div className="bg-gray-800 p-6 rounded-lg">
+        <div className="text-red-400 p-4 bg-gray-700 rounded">
+          {solanaError || nftError}
         </div>
+      </div>
+    );
+  }
 
-        {/* Block Info Card */}
-        <div className="bg-gray-700 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-teal-300 mb-2">
-            Latest Block
-          </h3>
-          <div className="flex justify-between items-baseline">
-            <span className="text-2xl font-bold text-white">
-              {data.blockHeight.toLocaleString()}
-            </span>
-            <span className="text-sm text-gray-400">Height</span>
-          </div>
-          <div className="text-sm text-gray-400 mt-2">
-            Current slot: {data.slot.toLocaleString()}
-          </div>
-        </div>
-
-        {/* Epoch Progress Card */}
-        <div className="bg-gray-700 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-teal-300 mb-2">
-            Epoch Progress
-          </h3>
-          <div className="flex justify-between items-baseline">
-            <span className="text-2xl font-bold text-white">
-              {data.epochInfo.epoch}
-            </span>
-            <span className="text-sm text-gray-400">Current Epoch</span>
-          </div>
-          <div className="mt-2">
-            <div className="w-full bg-gray-600 rounded-full h-2">
-              <div
-                className="bg-teal-400 h-2 rounded-full"
-                style={{
-                  width: `${
-                    (data.epochInfo.slotIndex / data.epochInfo.slotsInEpoch) *
-                    100
-                  }%`,
-                }}
-              ></div>
+  return (
+    <div className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-8">
+      {/* Blockchain Health */}
+      {solanaData && (
+        <div>
+          <h2 className="text-2xl font-bold text-teal-400 mb-4">
+            Blockchain Overview
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <p className="text-sm text-gray-400">Current Slot</p>
+              <p className="text-lg font-semibold text-white">
+                {solanaData.slot}
+              </p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <p className="text-sm text-gray-400">TPS</p>
+              <p className="text-lg font-semibold text-white">
+                {solanaData.tps}
+              </p>
+            </div>
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <p className="text-sm text-gray-400">Blockchain Health</p>
+              <p className="text-lg font-semibold text-teal-400">
+                {solanaData.health}
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Version Info */}
-      <div className="bg-gray-700 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-teal-300 mb-3">
-          System Information
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span className="text-gray-400">Solana Core Version:</span>
-            <span className="text-white ml-2">
-              {data.version["solana-core"]}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-400">Feature Set:</span>
-            <span className="text-white ml-2">
-              {data.version["feature-set"]}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-400">Last Block Time:</span>
-            <span className="text-white ml-2">
-              {new Date(data.blockTime * 1000).toLocaleString()}
-            </span>
+      {/* NFT Collections */}
+      {nftData?.collections && nftData.collections.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold text-teal-400 mb-4">
+            Top NFT Collections
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {nftData.collections.map((collection, index) => (
+              <div key={index} className="bg-gray-700 p-4 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <h3 className="text-lg font-semibold text-white">
+                    {collection.name}
+                  </h3>
+                  <span className="text-sm text-teal-400">
+                    {collection.items} items
+                  </span>
+                </div>
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Floor Price</span>
+                    <span className="text-white">
+                      {collection.floorPrice.toFixed(2)} SOL
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">24h Volume</span>
+                    <span className="text-white">
+                      {collection.volume24h.toFixed(2)} SOL
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
-    </section>
+      )}
+
+      {/* Recent Sales */}
+      {nftData?.recentSales && nftData.recentSales.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold text-teal-400 mb-4">
+            Recent Sales
+          </h2>
+          <div className="space-y-3">
+            {nftData.recentSales.map((sale, index) => (
+              <div
+                key={index}
+                className="bg-gray-700 p-4 rounded-lg flex justify-between items-center"
+              >
+                <div>
+                  <p className="text-white font-medium">{sale.collection}</p>
+                  <p className="text-sm text-gray-400">
+                    {new Date(sale.time * 1000).toLocaleString()}
+                  </p>
+                </div>
+                <span className="text-teal-400 font-bold">
+                  {sale.price.toFixed(2)} SOL
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
